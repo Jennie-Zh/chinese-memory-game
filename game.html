@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>文字图片消消乐</title>
+    <style>
+      /* 页眉样式 */
+      .game-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.1);
+            color: white;
+            padding: 10px 0;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        /* 页眉内容容器 */
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+   /* 标题文字样式 */
+   .header-title {
+            font-size: 15px;
+            margin: 5px 0;
+        }
+
+        /* 控制按钮容器 */
+        .controls {
+            display: flex;
+            gap: 1cm; /* 1厘米间距 */
+            margin: 10px 0 5px;
+        }
+
+     /* 游戏内容容器 */
+     #gameContainer {
+            margin-top: 120px; /* 留出页眉空间 */
+            padding: 15px;
+        }
+
+        /* 按钮样式 */
+        .controls button {
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: rgba(255,165,0,0.9);
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(3px);
+        }
+
+        
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .header-title {
+                font-size: 11px;
+            }
+            .controls {
+                gap: 0.5cm;
+            }
+            .controls button {
+                padding: 6px 15px;
+                font-size: 14px;
+            }
+            #gameContainer {
+                margin-top: 100px;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            position: relative; /* 新增定位上下文 */
+        }
+
+        /* 共用背景样式 */
+        .background-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+.background-layer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.8) blur(2px); /* 增加模糊提升可读性 */
+        }
+
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            position: relative; /* 确保按钮在背景之上 */
+        }
+
+        .controls button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #1890ff;
+            color: white;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .controls button:hover {
+            background: #096dd9;
+            transform: translateY(-2px);
+        }
+
+        /* 游戏区域 */
+        #gameContainer {
+            width: 90%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            padding: 10px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            width: 120px;
+            height: 140px;
+            border: 2px solid #e4e6eb;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .card.matched {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .card.selected {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* 文字样式 */
+        .pinyin {
+            font-size: 25px;
+            margin-bottom: 4px;
+            font-family: "KaiTi", cursive;
+            color: #333;
+            padding: 0 5px;
+            text-align: center;
+        }
+
+        .hanzi {
+            font-size: 30px;
+            font-family: "KaiTi", cursive;
+            color: #1a1a1a;
+        }
+
+        /* 图片卡片 */
+        .image-card {
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 动画效果 */
+        @keyframes disappear {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* 胜利提示 */
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            color: #ff6b6b;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: zoomIn 0.5s;
+            display: none;
+        }
+
+        @keyframes zoomIn {
+            from { transform: translate(-50%, -50%) scale(0); }
+            to { transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="game-header">
+        <div class="header-container">
+            <p class="header-title">跟Jennie学中文 Copyright © 2025</p>
+            <div class="controls">
+                <button onclick="window.location.href='index.html'">← 返回设置</button>
+                <button onclick="restartGame()">🔄 重新开始</button>
+            </div>
+        </div>
+    </header>
+    
+    <div id="gameContainer"></div>
+
+    <!-- 新增背景层 -->
+    <div class="background-layer">
+        <img src="summer.jpg" alt="背景图片">
+    </div>
+
+    
+
+    <div id="gameContainer"></div>
+    <div id="winMessage">🎉 通关成功！</div>
+
+    <!-- 音效 -->
+    <audio id="successSound" src="coin.wav"></audio>
+    <audio id="failSound" src="https://assets.mixkit.co/active_storage/sfx/2595/2595-preview.mp3"></audio>
+    <audio id="winSound" src="happy.wav"></audio>
+
+    <script>
+        let selectedCards = [];
+        let totalPairs = 0;
+        let matchedPairs = 0;
+        let gameData = null;
+
+        // 初始化游戏
+        function initGame() {
+            gameData = JSON.parse(localStorage.getItem('gameData'));
+            if (!gameData) {
+                alert('游戏数据加载失败！');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const allCards = [];
+            gameData.words.forEach((word, index) => {
+                const pair = {
+                    word: word,
+                    pinyin: gameData.pinyins[index],
+                    image: gameData.images[index]
+                };
+
+                // 每个组合生成4张卡片（2文字+2图片）
+                allCards.push(createCard('text', pair));
+                allCards.push(createCard('text', pair));
+                allCards.push(createCard('image', pair));
+                allCards.push(createCard('image', pair));
+            });
+
+            totalPairs = allCards.length / 2;
+            shuffleArray(allCards);
+            
+            const container = document.getElementById('gameContainer');
+            container.innerHTML = '';
+            allCards.forEach(card => container.appendChild(card));
+        }
+
+        // 创建卡片
+        function createCard(type, pair) {
+            const card = document.createElement('div');
+            card.className = `card ${type}-card`;
+            card.dataset.word = pair.word;
+
+            if (type === 'text') {
+                card.innerHTML = `
+                    <div class="pinyin">${pair.pinyin}</div>
+                    <div class="hanzi">${pair.word}</div>
+                `;
+            } else {
+                card.style.backgroundImage = `url(${pair.image})`;
+                card.classList.add('image-card');
+            }
+
+            card.addEventListener('click', handleCardClick);
+            return card;
+        }
+
+        // 处理点击事件
+        function handleCardClick() {
+            if (this.classList.contains('matched') || 
+                selectedCards.length >= 2) return;
+
+            this.classList.add('selected');
+            selectedCards.push(this);
+
+            if (selectedCards.length === 2) {
+                setTimeout(checkMatch, 300);
+            }
+        }
+
+        // 检查匹配
+        function checkMatch() {
+            const [card1, card2] = selectedCards;
+            const isMatch = card1.dataset.word === card2.dataset.word && 
+                          card1.classList.contains('text-card') !== 
+                          card2.classList.contains('text-card');
+
+            if (isMatch) {
+                handleMatchSuccess(card1, card2);
+                checkGameComplete();
+            } else {
+                handleMatchFail();
+            }
+
+            resetSelection();
+        }
+
+        // 匹配成功处理
+        function handleMatchSuccess(...cards) {
+            document.getElementById('successSound').play();
+            cards.forEach(card => {
+                card.style.animation = 'disappear 0.5s forwards';
+                setTimeout(() => card.remove(), 500);
+            });
+            matchedPairs++;
+        }
+
+        // 匹配失败处理
+        function handleMatchFail() {
+            document.getElementById('failSound').play();
+            selectedCards.forEach(card => {
+                card.style.animation = 'shake 0.5s';
+                setTimeout(() => card.style.animation = '', 500);
+            });
+        }
+
+        // 重置选择状态
+        function resetSelection() {
+            selectedCards.forEach(card => card.classList.remove('selected'));
+            selectedCards = [];
+        }
+
+        // 检查游戏完成
+        function checkGameComplete() {
+            if (matchedPairs === totalPairs) {
+                document.getElementById('winSound').play();
+                const winMessage = document.getElementById('winMessage');
+                winMessage.style.display = 'block';
+                setTimeout(() => {
+                    winMessage.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            const container = document.getElementById('gameContainer');
+            container.innerHTML = '';
+            selectedCards = [];
+            matchedPairs = 0;
+            initGame();
+        }
+
+        // 工具函数：洗牌算法
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>

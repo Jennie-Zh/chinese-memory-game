@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <title>游戏设置 - 文字图片消消乐</title>
+        <style>
+ 
+            body  {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            position: relative; /* 新增定位上下文 */
+            display: flex;
+          flex-direction: column;
+          align-items: center; /* 新增整体居中 */
+        }
+
+        /* 背景容器 */
+        .background-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }    
+
+        .background-layer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.9); /* 降低亮度提升文字可读性 */
+        }
+
+        .input-group, .upload-section {
+    margin: 20px auto; /* 上下20px 左右自动居中 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 90%;
+    max-width: 600px;
+}
+    
+            textarea {
+                width: 96%;
+                height: 30px;
+                margin: 10px 0;
+                padding: 12px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                resize: vertical;
+                font-size: 16px;
+                background: rgba(255,255,255,0.9);
+            }
+    
+            #imagePreview {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin: 15px 0;
+                min-height: 120px;
+            }
+    
+            .preview-item {
+                width: 80px;
+                height: 80px;
+                border: 2px dashed #4CAF50;
+                border-radius: 8px;
+                overflow: hidden;
+                position: relative;
+                cursor: move;
+                transition: all 0.3s;
+                background: rgba(255,255,255,0.9);
+            }
+    
+            /* 按钮橙色样式 */
+        button {
+            background: #FFA500 !important; /* 主橙色 */
+            border: 2px solid #FF8C00 !important;
+            color: white !important;
+            transition: all 0.3s !important;
+        }
+
+        button:hover {
+            background: #FF8C00 !important; /* 深橙色 */
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(255,140,0,0.3) !important;
+        }
+
+        button:active {
+            background: #FF7F00 !important; /* 更深的橙色 */
+            transform: translateY(0) !important;
+        }
+
+            
+        </style>
+    </head>
+<body>
+    <header class="copyright-header">
+        <p>跟Jennie学中文 | Learn Chinese with Jennie </p>
+    </header>
+    <style>
+    /* 新增页眉样式 */
+    .copyright-header {
+    padding: 8px 20px; /* 减小内边距 */
+    font-size: 15px;   /* 缩小字体 */
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0); /* 更细的边框 */
+}
+
+/* 新增输入区透明底纹容器 */
+.content-wrapper {
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 25px;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(5px);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 600px) {
+    .content-wrapper {
+        padding: 15px;
+        margin: 15px auto;
+    }
+}
+</style>
+<div class="content-wrapper">
+    <div class="input-group">
+        <h3>中文输入（用顿号、分隔）</h3>
+        <textarea id="wordsInput" placeholder="例：苹果、香蕉、熊猫"></textarea>
+    </div>
+
+    <div class="input-group">
+        <h3>拼音输入（用顿号、分隔）</h3>
+        <textarea id="pinyinInput" placeholder="例：píng guǒ、xiāng jiāo、xióng māo"></textarea>
+    </div>
+
+    <div class="input-group">
+        <h3>图片上传（支持拖拽排序）</h3>
+        <input type="file" id="imageUpload" multiple accept="image/*">
+        <div id="imagePreview"></div>
+    </div>
+
+    <button id="startBtn">🎮 开始游戏</button>
+    <button id="resetBtn">🔄 重置</button>
+</div>
+
+    <script>
+        let images = [];
+        let dragStartIndex = 0;
+
+        // 图片上传处理
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const readers = files.map(file => {
+                return new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(readers).then(results => {
+                images = [...images, ...results];
+                refreshPreview();
+            });
+        });
+
+        // 拖拽功能实现
+        function initDragDrop() {
+            const container = document.getElementById('imagePreview');
+            
+            container.addEventListener('dragstart', (e) => {
+                const item = e.target.closest('.preview-item');
+                if (!item) return;
+                dragStartIndex = [...container.children].indexOf(item);
+                item.classList.add('dragging');
+            });
+
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY);
+                const currentItem = document.querySelector('.dragging');
+                if (!currentItem) return;
+
+                if (afterElement) {
+                    container.insertBefore(currentItem, afterElement);
+                } else {
+                    container.appendChild(currentItem);
+                }
+            });
+
+            container.addEventListener('dragend', (e) => {
+                const item = e.target.closest('.preview-item');
+                if (item) {
+                    item.classList.remove('dragging');
+                    const dragEndIndex = [...container.children].indexOf(item);
+                    swapItems(dragStartIndex, dragEndIndex);
+                }
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.preview-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                return offset < 0 && offset > closest.offset 
+                    ? { offset: offset, element: child }
+                    : closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function swapItems(fromIndex, toIndex) {
+            [images[fromIndex], images[toIndex]] = [images[toIndex], images[fromIndex]];
+            refreshPreview();
+        }
+
+        // 刷新预览
+        function refreshPreview() {
+            const container = document.getElementById('imagePreview');
+            container.innerHTML = '';
+            
+            images.forEach((src, index) => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.draggable = true;
+                div.innerHTML = `
+                    <img src="${src}" style="width:100%;height:100%;object-fit:cover;">
+                    <div class="remove-btn">×</div>
+                `;
+                container.appendChild(div);
+            });
+
+            // 删除功能
+            container.querySelectorAll('.remove-btn').forEach((btn, index) => {
+                btn.addEventListener('click', () => {
+                    images.splice(index, 1);
+                    refreshPreview();
+                });
+            });
+
+            initDragDrop();
+        }
+
+        // 开始游戏
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const words = document.getElementById('wordsInput').value.trim().split('、');
+            const pinyins = document.getElementById('pinyinInput').value.trim().split('、');
+
+            if (validateInput(words, pinyins)) {
+                const gameData = {
+                    words,
+                    pinyins,
+                    images
+                };
+                localStorage.setItem('gameData', JSON.stringify(gameData));
+                window.location.href = 'game.html';
+            }
+        });
+
+        // 输入验证
+        function validateInput(words, pinyins) {
+            if (words.length === 0 || pinyins.length === 0) {
+                alert("请输入完整内容！");
+                return false;
+            }
+            if (words.length !== pinyins.length) {
+                alert("中文与拼音数量不匹配！");
+                return false;
+            }
+            if (words.length !== images.length) {
+                alert(`需要上传 ${words.length} 张图片！（当前：${images.length}张）`);
+                return false;
+            }
+            return true;
+        }
+
+        // 重置功能
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('wordsInput').value = '';
+            document.getElementById('pinyinInput').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+            images = [];
+        });
+
+
+    </script>
+    
+</body>
+<div class="background-layer">
+    <img src="summer.jpg" alt="背景图片">
+</div>
+</html>
