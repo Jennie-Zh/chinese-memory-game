@@ -408,14 +408,15 @@
         initGame();
 
         // 生成二维码
-        new QRCode(document.getElementById("qrcode"), {
-    text: window.location.href,
+     new QRCode(document.getElementById("qrcode"), {
+    text: "https://jennie-zh.github.io/chinese-memory-game/game.html",
     width: 90,
     height: 90,
     colorDark: "#000000",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H
 });
+
 
 
     </script>
